@@ -73,7 +73,7 @@ size_t buffer_append(const jack_default_audio_sample_t* arr, size_t alen) {
 }
 size_t buffer_remove(jack_default_audio_sample_t* dest, size_t dlen) {
 	mtx_lock(&buff_lock);
-	ssize_t len = MIN(buff_pos, dlen);
+	ssize_t len = MIN(MIN(buff_pos, dlen), buff_len);
 	memcpy(dest, buffer, len * sizeof(float));
 	memmove(buffer, buffer + len, (buff_pos - len) * sizeof(float));
 	buff_pos -= len;
@@ -90,7 +90,7 @@ bool buffer_is_full(void) {
 
 size_t buffer_write(int fd, size_t dlen) {
 	mtx_lock(&buff_lock);
-	ssize_t len = MIN(buff_pos, dlen);
+	size_t len = MIN(buff_pos, dlen);
 	size_t pos = 0;
 	while (pos < len) {
 		ssize_t v = write(fd, buffer, (len - pos) * sizeof(float));
@@ -112,7 +112,7 @@ size_t buffer_read(int fd, size_t alen) {
 		if (v <= 0) break;
 		pos += v / sizeof(float);
 	}
-	buff_pos += pos;
+	buff_pos = MIN(buff_pos + pos, buff_len);
 	mtx_unlock(&buff_lock);
 	return len;
 }
