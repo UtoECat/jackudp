@@ -27,9 +27,14 @@
 int sock = 0;
 int port = DEFAULT_PORT;
 
+bool message = false;
 
 void process(jack_default_audio_sample_t* data, size_t size) {
-	buffer_append(data, size);
+	int val = buffer_append(data, size);
+	if (!val) {
+		if (!message) perror("internal buffer owerflow! Data wasn't recieved!\n");
+		message = true;
+	} else message = false;
 }
 
 int main (int argc, const char* argv[]) {
@@ -57,11 +62,11 @@ int main (int argc, const char* argv[]) {
 			break;
 			case 'c' :
 				client = argv[++i];
-				printf("Setted jack client name %s\n", server);
+				printf("Setted jack client name %s\n", client);
 			break;
 			case 'p' :
 				port = htons(atoi(argv[++i]));
-				printf("Setted port (BIG ENDIAN) %i\n", port);
+				printf("Setted port %i\n", ntohs(port));
 				break;
 			case 'a' :
 				addr = inet_addr(argv[++i]);
@@ -77,7 +82,7 @@ int main (int argc, const char* argv[]) {
 	sock = udp_open_client(addr, htons(port));
 	char test[5] = {0};
 	j_connect(client, server, 1);
-	fprintf(stderr, "writed %li\n", write(sock, test, 4));
+
 	while (j_active()) {
 		size_t val = buffer_write(sock, 1024);
 		if (!val) usleep(AWAIT_MICROSEC);
