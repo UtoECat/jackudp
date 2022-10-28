@@ -6,7 +6,7 @@
 #include <stdbool.h>
 
 #define DEFAULT_PORT 5000
-#define DEFAULT_ADDRESS htonl(INADDR_LOOPBACK)
+#define DEFAULT_ADDRESS htonl(INADDR_ANY)
 
 /*
  * resample audio data :)
