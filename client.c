@@ -79,7 +79,8 @@ int main (int argc, const char* argv[]) {
 	j_connect(client, server, 1);
 	fprintf(stderr, "writed %li\n", write(sock, test, 4));
 	while (j_active()) {
-		buffer_write(sock, 1024);
+		size_t val = buffer_write(sock, 1024);
+		if (!val) usleep(AWAIT_MICROSEC);
 	}
 	perror("Jack server stopped!");
 	close(sock);

@@ -20,20 +20,19 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
 
 
 int sock = 0;
 int port = DEFAULT_PORT;
 
 void process(jack_default_audio_sample_t* data, size_t size) {
-	size_t readed = 0;
-	size_t cnt = 0;
-	while (readed < size) {
-		ssize_t v = read(sock, data + readed, (size - readed) * sizeof(float));
-		if (v <= 0) break;
-		readed += v / sizeof(float);
+	buffer_check_size(size * 2);
+	size_t readed = buffer_remove(data, size);
+	if (readed == 0) {
+			perror("can't get data from client");
+			memset(data, 0, sizeof(float) * size);
 	}
-	if (readed < size) perror("can't get data from client");
 }
 
 int main (int argc, const char* argv[]) {
@@ -81,7 +80,10 @@ int main (int argc, const char* argv[]) {
 	char test[5] = {0};
 	fprintf(stderr, "readed %li\n", read(sock, test, 4));
 	j_connect(client, server, 0);
-	while (j_active()) {sleep(1);}
+	while (j_active()) {
+			size_t v = buffer_read(sock, 1024);
+			if (v == 0) usleep(AWAIT_MICROSEC);
+	};
 	perror("Jack server stopped!");
 	close(sock);
 }

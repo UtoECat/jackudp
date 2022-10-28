@@ -7,6 +7,7 @@
 
 #define DEFAULT_PORT 5000
 #define DEFAULT_ADDRESS htonl(INADDR_ANY)
+#define AWAIT_MICROSEC 10000
 
 /*
  * resample audio data :)
@@ -51,7 +52,12 @@ extern void process(jack_default_audio_sample_t* arr, size_t len);
 void buffer_check_size(size_t len);
 size_t buffer_append(const jack_default_audio_sample_t*, size_t len);
 size_t buffer_remove(jack_default_audio_sample_t* dest, size_t len);
-size_t buffer_write(int fd, size_t dlen) ;
+
+/*
+ * Same, but reads/writes from/to file descriptor/socket
+ */
+size_t buffer_write(int fd, size_t dlen);
+size_t buffer_read(int fd, size_t alen);
 
 // to get ip from string use inet_addr("129.5.24.1")
 // if ip is getted from int, it must be casted to INET byteorder!

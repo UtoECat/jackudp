@@ -81,6 +81,13 @@ size_t buffer_remove(jack_default_audio_sample_t* dest, size_t dlen) {
 	return len;
 }
 
+bool buffer_is_full(void) {
+	mtx_lock(&buff_lock);
+	bool v = buff_pos >= buff_len - 5;
+	mtx_unlock(&buff_lock);
+	return v;
+}
+
 size_t buffer_write(int fd, size_t dlen) {
 	mtx_lock(&buff_lock);
 	ssize_t len = MIN(buff_pos, dlen);
@@ -92,6 +99,20 @@ size_t buffer_write(int fd, size_t dlen) {
 	}
 	memmove(buffer, buffer + len, (buff_pos - len) * sizeof(float));
 	buff_pos -= len;
+	mtx_unlock(&buff_lock);
+	return len;
+}
+
+size_t buffer_read(int fd, size_t alen) {
+	mtx_lock(&buff_lock);
+	size_t len = MIN(buff_len - buff_pos, alen);
+	size_t pos = 0;
+	while (pos < len * sizeof(float)) {
+		ssize_t v = read(fd, buffer + buff_pos, len * sizeof(float));
+		if (v <= 0) break;
+		pos += v / sizeof(float);
+	}
+	buff_pos += pos;
 	mtx_unlock(&buff_lock);
 	return len;
 }
