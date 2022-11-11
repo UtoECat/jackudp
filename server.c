@@ -28,13 +28,10 @@ int port = DEFAULT_PORT;
 bool message = false;
 
 void process(jack_default_audio_sample_t* data, size_t size) {
-	buffer_check_size(size * 2);
-	size_t readed = buffer_remove(data, size);
-	if (readed == 0) {
-			if (!message)
-			perror("can't get data from client");
-			message = true;
-			memset(data, 0, sizeof(float) * size);
+	int val = buffer_append(data, size);
+	if (!val) {
+		if (!message) perror("internal buffer owerflow! Data wasn't recieved!\n");
+		message = true;
 	} else message = false;
 }
 
@@ -80,16 +77,13 @@ int main (int argc, const char* argv[]) {
 		}
 	}
 	sock = udp_open_server(htons(port));
-	char test[5] = {0}; // costil i velosiped
 
-	j_connect(client, server, 0);
-	int cnt = 0;
+	j_connect(client, server, 1); // we send data
 	while (j_active()) {
-			size_t v = buffer_read(sock, 1024);
-			if (v == 0) usleep(AWAIT_MICROSEC);
-			else cnt = 0;
-			if (cnt > 5) read(sock, test, 5); // or socket will be closed :(
-	};
+		size_t val = buffer_write(sock, 1024);
+		if (!val) usleep(AWAIT_MICROSEC);
+	}
+
 	perror("Jack server stopped!");
 	close(sock);
 }

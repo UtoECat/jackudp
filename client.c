@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <string.h>
 
 int sock = 0;
 int port = DEFAULT_PORT;
@@ -30,10 +31,13 @@ int port = DEFAULT_PORT;
 bool message = false;
 
 void process(jack_default_audio_sample_t* data, size_t size) {
-	int val = buffer_append(data, size);
-	if (!val) {
-		if (!message) perror("internal buffer owerflow! Data wasn't recieved!\n");
-		message = true;
+	buffer_check_size(size * 2);
+	size_t readed = buffer_remove(data, size);
+	if (readed == 0) {
+			if (!message)
+			perror("can't get data from server");
+			message = true;
+			memset(data, 0, sizeof(float) * size);
 	} else message = false;
 }
 
@@ -73,20 +77,29 @@ int main (int argc, const char* argv[]) {
 				printf("Setted server address : %i\n", addr);
 				break;
 		} else {
-			printf("print jackudpsrv -h to see help\n");
+			printf("print jackudpcli -h to see help\n");
 			printf("Bad argument #%i : %s\n", i, argv[i]);
 			return -1;
 		}
 	}
 	
 	sock = udp_open_client(addr, htons(port));
+	j_connect(client, server, 0); // we recieve data
+
+	// server part
 	char test[5] = {0};
-	j_connect(client, server, 1);
+	int cnt = 0; // count of buffer owerflows
 
 	while (j_active()) {
-		size_t val = buffer_write(sock, 1024);
-		if (!val) usleep(AWAIT_MICROSEC);
-	}
+			size_t v = buffer_read(sock, 1024);
+			if (v == 0) {
+				usleep(AWAIT_MICROSEC);
+				cnt++; // buffer owerflow, or no data
+			}
+			else cnt = 0;
+			if (cnt > 5) read(sock, test, 5); // or socket will be closed :(
+	};
+
 	perror("Jack server stopped!");
 	close(sock);
 }

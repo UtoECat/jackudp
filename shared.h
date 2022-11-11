@@ -17,7 +17,7 @@ uint64_t Resample_f32(const float *in, float *out, int inrate, int outrate,
 
 /*
  * Connects to jack server in pc.
- * type => where is this program works : on reciever(server)(0) or sender(1) pc
+ * type => where is this program works : on reciever(client)(0) or sender(server)(1) pc
  * this function can no return in case of error :)
  * type also specifies port type : input(1) or output(0)
  */
